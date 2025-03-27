@@ -8,8 +8,9 @@ public class AdvancedCleaningBehaviour extends CyclicBehaviour {
         CLEAN, MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT
     }
 
-    // Constantes ajustées
-    private static final int BASE_CLEAN_PRIORITY = 20;
+    // Constantes de priorisation
+    private static final int CLEAN_PRIORITY = 100;  // Nettoyage toujours prioritaire
+    private static final int BASE_MOVE_PRIORITY = 10;
     private static final int DIRTY_ADJACENT_BONUS = 5;
     private static final int UNVISITED_BONUS = 8;
     private static final int CONSECUTIVE_PENALTY = 10;
@@ -44,7 +45,7 @@ public class AdvancedCleaningBehaviour extends CyclicBehaviour {
             return true;
         }
         if (agent.getEnvironment().isClean()) {
-            agent.logAction("Mission accomplie!");
+            agent.logAction("Mission accomplie !");
             agent.updateLogDisplay();
             agent.doDelete();
             return true;
@@ -53,72 +54,65 @@ public class AdvancedCleaningBehaviour extends CyclicBehaviour {
     }
 
     private Action selectOptimalAction() {
-        Map<Action, Integer> scores = new EnumMap<>(Action.class);
-
-        // Évaluation initiale
-        for (Action action : Action.values()) {
-            scores.put(action, evaluateAction(action));
-        }
-
-        // Application des pénalités
-        applyPenalties(scores);
-
-        // Sélection avec randomisation pour éviter les boucles
-        return selectActionWithRandomization(scores);
-    }
-
-    private Action selectActionWithRandomization(Map<Action, Integer> scores) {
-        // Convertir en liste triée
-        List<Map.Entry<Action, Integer>> sortedActions = new ArrayList<>(scores.entrySet());
-        sortedActions.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
-
-        // Prendre une action aléatoire parmi les 2 meilleures
-        int topActions = Math.min(2, sortedActions.size());
-        int selection = random.nextInt(topActions);
-
-        return sortedActions.get(selection).getKey();
-    }
-
-    private int evaluateAction(Action action) {
         int x = agent.getPosX();
         int y = agent.getPosY();
 
-        switch (action) {
-            case CLEAN:
-                if (agent.getEnvironment().isDirty(x, y)) {
-                    int score = BASE_CLEAN_PRIORITY;
-                    if (!agent.hasVisited(x, y)) score += UNVISITED_BONUS;
-                    return score;
-                }
-                return Integer.MIN_VALUE;
-
-            case MOVE_UP: return evaluateMove(x, y-1);
-            case MOVE_DOWN: return evaluateMove(x, y+1);
-            case MOVE_LEFT: return evaluateMove(x-1, y);
-            case MOVE_RIGHT: return evaluateMove(x+1, y);
-            default: return Integer.MIN_VALUE;
+        // Priorité absolue : Si la case actuelle est sale, on nettoie
+        if (agent.getEnvironment().isDirty(x, y)) {
+            return Action.CLEAN;
         }
+
+        // Évaluation des mouvements possibles
+        Map<Action, Integer> scores = new EnumMap<>(Action.class);
+        for (Action action : new Action[]{Action.MOVE_UP, Action.MOVE_DOWN, Action.MOVE_LEFT, Action.MOVE_RIGHT}) {
+            scores.put(action, evaluateMove(action));
+        }
+
+        // Application des pénalités pour éviter les répétitions excessives
+        applyPenalties(scores);
+
+        // Sélection de l’action optimale avec une légère randomisation
+        return selectBestMove(scores);
     }
 
-    private int evaluateMove(int newX, int newY) {
+    private Action selectBestMove(Map<Action, Integer> scores) {
+        List<Map.Entry<Action, Integer>> sortedActions = new ArrayList<>(scores.entrySet());
+        sortedActions.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
+
+        // On privilégie toujours la meilleure action
+        return sortedActions.get(0).getKey();
+    }
+
+    private int evaluateMove(Action action) {
+        int newX = agent.getPosX();
+        int newY = agent.getPosY();
+
+        switch (action) {
+            case MOVE_UP: newY--; break;
+            case MOVE_DOWN: newY++; break;
+            case MOVE_LEFT: newX--; break;
+            case MOVE_RIGHT: newX++; break;
+            default: return Integer.MIN_VALUE;
+        }
+
         if (!agent.isValidPosition(newX, newY)) {
             return Integer.MIN_VALUE;
         }
 
-        int score = 0;
+        int score = BASE_MOVE_PRIORITY;
         EnvironementModel env = agent.getEnvironment();
 
-        // Bonus pour case non visitée
+        // Bonus si la case est sale
+        if (env.isDirty(newX, newY)) {
+            score += CLEAN_PRIORITY;
+        }
+
+        // Bonus si la case n’a jamais été visitée
         if (!agent.hasVisited(newX, newY)) {
             score += UNVISITED_BONUS;
         }
 
-        // Bonus pour saleté sur la case cible
-        if (env.isDirty(newX, newY)) {
-            score += BASE_CLEAN_PRIORITY - 5;
-        }
-
-        // Détection des saletés adjacentes (3x3 autour de la cible)
+        // Bonus pour les cases adjacentes sales
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 if (dx == 0 && dy == 0) continue;
@@ -136,52 +130,44 @@ public class AdvancedCleaningBehaviour extends CyclicBehaviour {
     private void applyPenalties(Map<Action, Integer> scores) {
         if (lastAction != null) {
             int penalty = consecutiveSameAction * CONSECUTIVE_PENALTY;
-            scores.put(lastAction, scores.get(lastAction) - penalty);
+            scores.put(lastAction, scores.getOrDefault(lastAction, 0) - penalty);
         }
     }
 
     private void executeAction(Action action) {
+        int x = agent.getPosX();
+        int y = agent.getPosY();
+
         switch (action) {
             case CLEAN:
                 if (agent.cleanCurrentCell()) {
-                    agent.logAction("Nettoyage en (" + agent.getPosX() + "," + agent.getPosY() + ")");
-                    agent.markVisited(agent.getPosX(), agent.getPosY());
-                } else {
-                    agent.logAction("Aucune saleté en (" + agent.getPosX() + "," + agent.getPosY() + ")");
+                    agent.logAction("Nettoyage en (" + x + "," + y + ")");
+                    agent.markVisited(x, y);
                 }
                 break;
 
             case MOVE_UP:
-                if (agent.moveTo(agent.getPosX(), agent.getPosY() - 1)) {
-                    logDeplacement("haut");
-                }
+                if (agent.moveTo(x, y - 1)) logDeplacement("haut");
                 break;
             case MOVE_DOWN:
-                if (agent.moveTo(agent.getPosX(), agent.getPosY() + 1)) {
-                    logDeplacement("bas");
-                }
+                if (agent.moveTo(x, y + 1)) logDeplacement("bas");
                 break;
             case MOVE_LEFT:
-                if (agent.moveTo(agent.getPosX() - 1, agent.getPosY())) {
-                    logDeplacement("gauche");
-                }
+                if (agent.moveTo(x - 1, y)) logDeplacement("gauche");
                 break;
             case MOVE_RIGHT:
-                if (agent.moveTo(agent.getPosX() + 1, agent.getPosY())) {
-                    logDeplacement("droite");
-                }
+                if (agent.moveTo(x + 1, y)) logDeplacement("droite");
                 break;
         }
 
         agent.consumeEnergy(1);
-        agent.updateLogDisplay(); // Mise à jour de l'affichage des logs
+        agent.updateLogDisplay();
     }
 
     private void logDeplacement(String direction) {
-        String log = "Déplacement vers " + direction +
-                " -> (" + agent.getPosX() + "," + agent.getPosY() + ")";
-        agent.logAction(log);
+        agent.logAction("Déplacement vers " + direction + " -> (" + agent.getPosX() + "," + agent.getPosY() + ")");
     }
+
 
     private void updateActionHistory(Action action) {
         if (action == lastAction) {

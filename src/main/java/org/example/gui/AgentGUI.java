@@ -80,6 +80,22 @@ public class AgentGUI extends JFrame {
             }
             logArea.setText(sb.toString());
             logArea.setCaretPosition(logArea.getDocument().getLength());
+
+            // Debug: Affichez les logs dans la console
+            System.out.println(message);
         });
     }
+    public void refreshLog() {
+        SwingUtilities.invokeLater(() -> {
+            StringBuilder sb = new StringBuilder();
+            for (String log : logQueue) {
+                sb.append(log).append("\n");
+            }
+            logArea.setText(sb.toString());
+            logArea.setCaretPosition(logArea.getDocument().getLength());
+        });
+    }
+
+
+
 }

@@ -2,15 +2,14 @@ package org.example.agent;
 
 import jade.core.Agent;
 import org.example.gui.AgentGUI;
-// Ajoutez cet import en haut de votre fichier CleaningAgent.java
 import javax.swing.SwingUtilities;
 
 public class CleaningAgent extends Agent {
     private EnvironementModel environment;
     private int posX, posY;
-    private int energy = 100;
+    private int energy = 200;
     private transient AgentGUI gui;
-    private boolean[][] visitedCells;  // Mémoire des cases visitées
+    private boolean[][] visitedCells;
 
     @Override
     protected void setup() {
@@ -21,14 +20,12 @@ public class CleaningAgent extends Agent {
                 posX = (int) args[1];
                 posY = (int) args[2];
 
-                // Initialisation de la mémoire des cases visitées
                 visitedCells = new boolean[environment.getGrid().length][environment.getGrid()[0].length];
                 markVisited(posX, posY);
 
-                // Initialisation GUI
+                // Initialisation de l'interface graphique
                 initGUI();
 
-                // Ajout du comportement
                 addBehaviour(new AdvancedCleaningBehaviour(this));
 
             } catch (ClassCastException | ArrayIndexOutOfBoundsException e) {
@@ -50,7 +47,6 @@ public class CleaningAgent extends Agent {
     }
 
     // --- Méthodes améliorées ---
-
     public boolean moveTo(int x, int y) {
         if (isValidPosition(x, y)) {
             setPosition(x, y);
@@ -58,9 +54,6 @@ public class CleaningAgent extends Agent {
             return true;
         }
         return false;
-    }
-    public void setGUI(AgentGUI gui) {
-        this.gui = gui;
     }
 
     private void log(String message) {
@@ -79,38 +72,14 @@ public class CleaningAgent extends Agent {
         return false;
     }
 
-    // --- Gestion mémoire ---
-
-    public void markVisited(int x, int y) {
-        if (isValidPosition(x, y)) {
-            visitedCells[x][y] = true;
-        }
-    }
-
-    public boolean hasVisited(int x, int y) {
-        return isValidPosition(x, y) && visitedCells[x][y];
-    }
-    public void updateLogDisplay() {
-        if (gui != null) {
-            // Le GUI se met à jour automatiquement via addLog
-        }
-    }
-
-
     // --- Méthodes utilitaires ---
-
     public boolean isValidPosition(int x, int y) {
-        return x >= 0 && y >= 0 &&
-                x < environment.getGrid().length &&
-                y < environment.getGrid()[0].length;
+        return x >= 0 && y >= 0 && x < environment.getGrid().length && y < environment.getGrid()[0].length;
     }
 
     public void logStatus() {
         System.out.printf("[Agent %s] Pos:(%d,%d) Energie:%d Sales:%d%n",
-                getLocalName(),
-                posX, posY,
-                energy,
-                environment.countDirtyCells());
+                getLocalName(), posX, posY, energy, environment.countDirtyCells());
     }
 
     public void logAction(String action) {
@@ -118,7 +87,6 @@ public class CleaningAgent extends Agent {
     }
 
     // --- Getters/Setters ---
-
     public EnvironementModel getEnvironment() {
         return environment;
     }
@@ -150,5 +118,21 @@ public class CleaningAgent extends Agent {
         if (gui != null) {
             gui.updateDisplay(posX, posY, energy);
         }
+    }
+
+    public void updateLogDisplay() {
+        if (gui != null) {
+            gui.refreshLog();
+        }
+    }
+
+    public void markVisited(int x, int y) {
+        if (isValidPosition(x, y)) {
+            visitedCells[x][y] = true;
+        }
+    }
+
+    public boolean hasVisited(int x, int y) {
+        return isValidPosition(x, y) && visitedCells[x][y];
     }
 }
