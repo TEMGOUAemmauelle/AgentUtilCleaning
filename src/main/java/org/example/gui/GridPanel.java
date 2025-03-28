@@ -60,7 +60,6 @@ public class GridPanel extends JPanel {
                 label.setForeground(Color.WHITE);
             } else if (isDirty) {
                 cell.setBackground(new Color(80, 80, 80));
-
                 label.setForeground(new Color(220, 220, 220));
             } else {
                 cell.setBackground(new Color(245, 245, 245));

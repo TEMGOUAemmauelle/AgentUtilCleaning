@@ -49,6 +49,13 @@ public class Main {
                     new Object[]{env, 0, 0}
             );
             agent1.start();
+           // agent2 a la position
+            AgentController agent2 = container.createNewAgent("Cleaner2",
+                    CleaningAgent.class.getName(),
+                    new Object[]{env,0,9}
+            );
+
+            agent2.start();
 
 
 

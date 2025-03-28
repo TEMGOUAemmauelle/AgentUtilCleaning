@@ -13,7 +13,7 @@ public class AdvancedCleaningBehaviour extends CyclicBehaviour {
     private static final int BASE_MOVE_PRIORITY = 10;
     private static final int DIRTY_ADJACENT_BONUS = 5;
     private static final int UNVISITED_BONUS = 8;
-    private static final int CONSECUTIVE_PENALTY = 10;
+    private static final int CONSECUTIVE_PENALTY = 50;
 
     private final CleaningAgent agent;
     private Action lastAction = null;

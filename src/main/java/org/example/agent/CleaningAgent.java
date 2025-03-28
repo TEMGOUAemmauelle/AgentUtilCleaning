@@ -7,7 +7,7 @@ import javax.swing.SwingUtilities;
 public class CleaningAgent extends Agent {
     private EnvironementModel environment;
     private int posX, posY;
-    private int energy = 200;
+    private int energy = 100;
     private transient AgentGUI gui;
     private boolean[][] visitedCells;
 
